@@ -15,19 +15,19 @@
 # Part 0: Cargar datos, buenas prácticas y librerías
 # =========================================================
 
+# setwd("~/Desktop/Taller 1 - BigData/Taller4_PIB_Regional_italiano")
 # setwd("C:/Users/Asuar/OneDrive/Escritorio/Libros Clases/Economía/Ciencia Datos y Econometria/Taller4_PIB_Regional_italiano")
 
 rm(list = ls())
 
 require(pacman)
 
-p_load(sf, tidyverse, dplyr, knitr, stargazer, ggplot2, stringr)
+p_load(sf, tidyverse, dplyr, knitr, stargazer, ggplot2, stringr, spdep)
 
 # Cargar datos espaciales
 italia_espaciales <- st_read("stores/Reg2014_ED50g/Reg2014_ED50_g.shp")
 # Cargar datos csv
 GDP_ita <- read_csv("stores/Data.csv")
-
 
 # =========================================================
 # Part 1: Análisis descriptivo y territorial
@@ -106,9 +106,59 @@ summary(model_CB)
 elasticidad_suma <- sum(coef(model_CB)[-1])
 elasticidad_suma
 
+# =========================================================
+# Part 3: Analisis de dependencia espacial
+# =========================================================
 
+# Verificar el sistema de coordenadas
+st_crs(italia_map)
+## De acuerdo a este codigo, el archivo ya se encuentra en metros
 
+# --- 3.1 Construcción de matriz de pesos espaciales (W) ---
+# Obtener centroides de las regiones
+coords <- st_centroid(st_geometry(italia_map))
 
+# Probando diferentes criteros para encontrar el punto optimo donde cada punto tenga al
+# menos un vecino 50, 100, 200, 300, 350, 370, 379
 
+# CRITERIO 1: Matriz por DISTANCIA (umbral escogido = 379 km)
+# Nota: Ajusta el umbral según la escala de tus datos
+dist_380km <- spdep::dnearneigh(coords, 0, 379000) # 379,000 metros
+
+# Verificar regiones sin vecinos
+n_sin_vecinos_dist <- sum(card(dist_50km) == 0)
+print(paste("=== MATRIZ DE PESOS POR DISTANCIA ==="))
+print(paste("Umbral: 50 km"))
+print(paste("Regiones sin vecinos:", n_sin_vecinos_dist))
+
+# Si hay regiones sin vecinos, mostrar cuáles son
+if(n_sin_vecinos_dist > 0) {
+  regiones_sin_vecinos <- italia_map$REGIONE[which(card(dist_50km) == 0)]
+  print(paste("Regiones sin vecinos:", paste(regiones_sin_vecinos, collapse = ", ")))
+}
+
+# Crear matriz de pesos W (row-standardized)
+W_dist <- spdep::nb2listw(dist_50km, style = "W", zero.policy = TRUE)
+
+# --- 3.2 Dispersión y Número promedio de vecinos
+summary(dist_380km)
+# Numero promedio de vecinos es 8.2
+# Sparcity seria 41%
+
+# --- 3.3 Test de Moran´s
+# Primero con residuos de MCO
+residuos_mco <- residuals(model_CB)
+moran_dist <- spdep::moran.test(residuos_mco, W_dist, 
+                                alternative = "two.sided",
+                                zero.policy = TRUE)
+print(moran_dist)
+# P-Value = 5.17e-09 - Significativo 
+
+# Segundo con la variable GDP
+moran_gdp <- spdep::moran.test(italia_map$GDP, W_dist, 
+                               alternative = "two.sided",
+                               zero.policy = TRUE)
+print(moran_gdp)
+# P-Value = 0.4592 - Significativo al 95%
 
 
