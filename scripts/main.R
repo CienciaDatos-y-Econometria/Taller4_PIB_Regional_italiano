@@ -21,8 +21,15 @@
 rm(list = ls())
 
 require(pacman)
-
-p_load(sf, tidyverse, dplyr, knitr, stargazer, ggplot2, stringr, spdep)
+p_load(sf, 
+       tidyverse, 
+       dplyr, 
+       knitr, 
+       stargazer, 
+       ggplot2, 
+       stringr, 
+       spdep, 
+       spatialreg)
 
 # Cargar datos espaciales
 italia_espaciales <- st_read("stores/Reg2014_ED50g/Reg2014_ED50_g.shp")
@@ -126,24 +133,24 @@ coords <- st_centroid(st_geometry(italia_map))
 dist_380km <- spdep::dnearneigh(coords, 0, 379000) # 379,000 metros
 
 # Verificar regiones sin vecinos
-n_sin_vecinos_dist <- sum(card(dist_50km) == 0)
+n_sin_vecinos_dist <- sum(card(dist_380km) == 0)
 print(paste("=== MATRIZ DE PESOS POR DISTANCIA ==="))
 print(paste("Umbral: 50 km"))
 print(paste("Regiones sin vecinos:", n_sin_vecinos_dist))
 
 # Si hay regiones sin vecinos, mostrar cuáles son
 if(n_sin_vecinos_dist > 0) {
-  regiones_sin_vecinos <- italia_map$REGIONE[which(card(dist_50km) == 0)]
+  regiones_sin_vecinos <- italia_map$REGIONE[which(card(dist_380km) == 0)]
   print(paste("Regiones sin vecinos:", paste(regiones_sin_vecinos, collapse = ", ")))
 }
 
 # Crear matriz de pesos W (row-standardized)
-W_dist <- spdep::nb2listw(dist_50km, style = "W", zero.policy = TRUE)
+W_dist <- spdep::nb2listw(dist_380km, style = "W", zero.policy = TRUE)
 
 # --- 3.2 Dispersión y Número promedio de vecinos
 summary(dist_380km)
 # Numero promedio de vecinos es 8.2
-# Sparcity seria 41%
+# Sparsity seria 41%
 
 # --- 3.3 Test de Moran´s
 # Primero con residuos de MCO
@@ -152,13 +159,48 @@ moran_dist <- spdep::moran.test(residuos_mco, W_dist,
                                 alternative = "two.sided",
                                 zero.policy = TRUE)
 print(moran_dist)
-# P-Value = 5.17e-09 - Significativo 
+# P-Value = 5.17e-09 - Significativo, Si hay autocorrelación espacial, El modelo MCO **NO capturó** toda la estructura espacial
+# Hay efectos espaciales (spillovers, externalidades) que el modelo ignora.
 
 # Segundo con la variable GDP
 moran_gdp <- spdep::moran.test(italia_map$GDP, W_dist, 
                                alternative = "two.sided",
                                zero.policy = TRUE)
 print(moran_gdp)
-# P-Value = 0.4592 - Significativo al 95%
+# P-Value = 0.4592 - No es significativo, No hay autocorrelación espacial
+
+# =========================================================
+# Part 4: Modelos Espaciales
+# =========================================================
+
+# --- 4.1 Modelo Spatial Lag (SAR) ---
+model_SAR <- lagsarlm(log(GDP) ~ log(K) + log(L), 
+                      data = italia_map, 
+                      listw = W_dist)
+summary(model_SAR)
+
+# --- 4.2 Modelo SARAR (SAC) ---
+model_SAC <- sacsarlm(log(GDP) ~ log(K) + log(L), 
+                      data = italia_map, 
+                      listw = W_dist)
+summary(model_SAC)
+
+# --- 4.3 Comparación de modelos ---
+# AIC y BIC para comparar
+AIC(model_CB, model_SAR, model_SAC)
+BIC(model_CB, model_SAR, model_SAC)
+
+lm.LMtests(model_CB, W_dist, test = "all")
+
+# Interpretación: 
+# - La dependencia espacial está PRINCIPALMENTE en los ERRORES (error espacial)
+# - También hay algo de dependencia en lag, pero es secundaria
+# - SARMA significativo -> usar modelo SAC
+# Modelo recomendado: SAC (SARAR)
+# Razón: Captura tanto el error espacial (dominante) como algo de lag espacial
+
+
+
+
 
 
