@@ -1,0 +1,366 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{moresize}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{siunitx}
+\usepackage{threeparttable}
+
+\sisetup{
+  table-number-alignment = center,
+  table-format = 1.2, % dos decimales (ajústalo si necesitas más)
+  detect-weight = true,
+  detect-family = true
+}
+
+
+\makeatletter
+\newcommand{\linebreakand}{%
+  \end{@IEEEauthorhalign}
+  \hfill\mbox{}\par
+  \mbox{}\hfill\begin{@IEEEauthorhalign}
+}
+\makeatother
+
+
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Analizando el PIB Regional Italiano}
+
+\author{%
+\IEEEauthorblockN{Adrián Arturo Suárez García}
+\IEEEauthorblockA{202123771\\
+\href{mailto:a.suarezg@uniandes.edu.co}{\texttt{a.suarezg@uniandes.edu.co}}}
+\and
+\IEEEauthorblockN{Luis Alejandro Rubiano Guerrero}
+\IEEEauthorblockA{202013482\\
+\href{mailto:la.rubiano@uniandes.edu.co}{\texttt{la.rubiano@uniandes.edu.co}}}
+\and
+\IEEEauthorblockN{Gabriel Alejandro Moreno Riveros}
+\IEEEauthorblockA{202014583\\
+\href{mailto:g.morenor@uniandes.edu.co}{\texttt{g.morenor@uniandes.edu.co}}}
+\linebreakand
+\IEEEauthorblockN{Gianluca Cicco}
+\IEEEauthorblockA{202020881\\
+\href{mailto:g.cicco@uniandes.edu.co}{\texttt{g.cicco@uniandes.edu.co}}}
+\and
+\IEEEauthorblockN{Juan Sebastián Sierra}
+\IEEEauthorblockA{202020881\\
+\href{mailto:j.sierrat@uniandes.edu.co}{\texttt{j.sierrat@uniandes.edu.co}}}
+}
+
+\maketitle
+
+\section{Introducción}
+
+El desempeño económico de las regiones italianas presenta grandes diferencias territoriales que preocupan al Ministerio de Economía y Finanzas, particularmente por sus implicaciones en el crecimiento de largo plazo y en la cohesión territorial del país. Comprender qué factores productivos explican estas brechas, y si existen patrones espaciales que amplifican o perpetúan las desigualdades, resulta esencial para diseñar políticas regionales efectivas y focalizadas.
+
+Este informe analiza la relación entre producto interno bruto (PIB), capital $K$ y trabajo $L$ en las $20$ regiones administrativas italianas a partir de la función de producción Cobb–Douglas en su forma básica. El objetivo central es caracterizar la estructura productiva regional, estimar las elasticidades de capital y trabajo, y evaluar si las regiones operan bajo rendimientos a escala constantes, crecientes o decrecientes. Además, se incorpora explícitamente la dimensión espacial del territorio, reconociendo que las regiones pueden influenciarse mutuamente mediante vínculos económicos, laborales y productivos.
+
+El análisis combina estadística descriptiva, econometría clásica y métodos de econometría espacial para: (i) identificar patrones geográficos de PIB, capital y empleo; (ii) evaluar la presencia de autocorrelación espacial; (iii) estimar modelos espaciales cuando corresponde; y (iv) derivar un diagnóstico territorial que permita detectar regiones con desempeño superior o inferior al esperado. Con base en estos hallazgos, se presentan recomendaciones de política que consideran tanto las capacidades productivas regionales como los potenciales efectos spillover entre territorios vecinos.
+
+Este enfoque ofrece al Ministerio una visión integral del crecimiento regional italiano, permitiendo orientar decisiones estratégicas de inversión pública y política territorial hacia un desarrollo más equilibrado y sostenible.
+
+\section{Análisis descriptivo y territorial}
+
+A partir de la Tabla 1 se ve que el desempeño económico de las regiones italianas no es simplemente distinto, sino abiertamente desigual. Por una parte, el PIB promedio de las veinte regiones ronda los $69 500$, mientras que Lombardia llega a $289 471$ y Valle D’Aosta apenas alcanza $3 847$. Esto quiere decir que una sola región produce cerca de cuatro veces más que la región promedio y más de setenta veces lo que genera la región más pequeña. Además, ocurre algo parecido con el trabajo $L$, ya que Lombardia concentra $4 515$,$4$ unidades frente a valores por debajo de $120$ en Molise y Valle D’Aosta. Adicionalmente, Lombardia aparece como outlier tanto en PIB como en $L$, mientras que el capital $K$ se mueve en un rango más estrecho entre $17$ y $29$. En concreto, Basilicata y Trentino Alto Adige combinan un PIB relativamente bajo con niveles altos de $K$, lo que apunta a estructuras más intensivas en capital en relación con el tamaño de su economía. Antes de seguir, verificamos que no hubiera datos perdidos, negativos ni registros duplicados y armonizamos los nombres de las regiones entre la base y el shapefile; por eso decidimos mantener estos valores extremos como parte real de la desigualdad territorial que el Ministerio quiere entender. 
+
+\begin{table}[H]
+\centering
+\caption{PIB, capital (K) y trabajo (L) por región de Italia}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Región} & \textbf{PIB} & \textbf{K (capital)} & \textbf{L (trabajo)} \\
+\midrule
+Lombardia            & 289471 & 19 & 4515.4 \\
+Lazio                & 150680 & 17 & 2414.3 \\
+Veneto               & 130764 & 22 & 2223.6 \\
+Emilia Romagna       & 120656 & 21 & 2033.3 \\
+Piemonte             & 113317 & 22 & 1952.1 \\
+Toscana              & 93870  & 19 & 1643.5 \\
+Campania             & 89691  & 20 & 1848.1 \\
+Sicilia              & 77455  & 21 & 1470.7 \\
+Puglia               & 63706  & 22 & 1283.4 \\
+Liguria              & 38661  & 17 & 631.4  \\
+Marche               & 36159  & 23 & 708.0  \\
+Friuli Venezia Giulia & 31416 & 22 & 558.0 \\
+Calabria             & 31121  & 21 & 642.6 \\
+Sardegna             & 30744  & 26 & 600.5 \\
+Trentino Alto Adige  & 28976  & 29 & 474.7 \\
+Abruzzo              & 24953  & 23 & 489.2 \\
+Umbria               & 19275  & 20 & 370.6 \\
+Basilicata           & 9956   & 28 & 211.8 \\
+Molise               & 5563   & 26 & 116.8 \\
+Valle D'Aosta        & 3847   & 23 & 58.1  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Esta lectura numérica se confirma al observar los mapas temáticos de la Figura \ref{fig:1}. En ellos se aprecia con claridad una concentración geográfica y la formación de clusters territoriales. Las tonalidades más oscuras de PIB y de trabajo se agrupan en un bloque continuo de regiones del norte y del centro norte encabezado por Lombardia, Veneto, Emilia Romagna y Piemonte, mientras que el sur peninsular y las islas aparecen en colores más claros y bastante homogéneos, lo que indica niveles sistemáticamente menores de producto y empleo. El mapa de $L$ reproduce casi el mismo patrón que el de PIB, de modo que el contraste norte–sur no es solo económico, sino también laboral. Por otro lado, el capital $K$ tiene un comportamiento algo diferente. Aunque el norte sigue concentrando niveles altos, surgen focos intensivos en algunas regiones del sur y en las islas, como Sardegna o partes del Mezzogiorno, que no lideran en PIB pero sí muestran valores elevados de $K$. Por tanto, los mapas dejan ver que sí existen clusters bien definidos y que norte y sur presentan patrones territoriales diferenciados, lo que refuerza la idea de brechas regionales que luego habrá que capturar en la modelación econométrica. 
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1.3\linewidth]{1a.png}
+    \includegraphics[width=1.3\linewidth]{1b.png}
+    \includegraphics[width=1.3\linewidth]{1c.png}
+    \caption{Mapas temáticos de PIB, capital (K) y trabajo (L) por región en Italia en 2004}
+    \label{fig:1}
+\end{figure}
+
+La matriz de dispersión de la Figura 2 ayuda a ver de forma más intuitiva cómo se mueven juntas las tres variables. En primer lugar, los puntos de PIB y trabajo $L$ casi forman una línea ascendente, lo que muestra una relación positiva muy fuerte: las regiones que emplean a más personas tienden también a generar más producto, algo que encaja con la lógica de una función de producción tipo Cobb Douglas donde el trabajo impulsa el PIB. En cambio, la relación entre PIB y capital $K$ es menos directa. No se observa una nube creciente, sino un patrón en el que varias regiones pequeñas, como Basilicata, Trentino Alto Adige o Valle D’Aosta, combinan poco PIB con niveles relativamente altos de $K$, mientras que el grupo de regiones grandes del norte tiene PIB elevado con valores de $K$ más bien moderados. Esto sugiere que $K$ está capturando sobre todo la intensidad de capital y no únicamente el tamaño de la economía regional. En resumen, las correlaciones simples son coherentes con la teoría económica en el caso de $L$ y, al mismo tiempo, muestran que el papel del capital es más sutil, lo que justifica estimar el modelo log lineal para entender mejor cómo se combinan $K$ y $L$ en la producción regional. 
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{fig2.png}
+    \caption{Matriz de dispersión entre variables económicas}
+    \label{fig:2}
+\end{figure}
+
+\section{Modelo base (MCO)}
+
+\begin{table}[H]
+\scriptsize
+\centering
+\caption{Modelo base Cobb--Douglas $\log(\text{GDP})$ para las regiones de Italia}
+\begin{threeparttable}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Parámetro} & \textbf{Coeficiente} & \textbf{Error estándar} & \textbf{t estadístico} & \textbf{p valor} \\
+\midrule
+Intercepto & 4.82756 & 0.73080 & 6.606 & 4.45e-06\tnote{***} \\
+$\alpha$ (capital, $\log K$) & -0.27095 & 0.20055 & -1.351 & 0.194 \\
+$\beta$ (trabajo, $\log L$) & 1.00197 & 0.02659 & 37.683 & $< 2\text{e-}16$\tnote{***} \\
+\midrule
+$\alpha + \beta$ & 0.73102 & \multicolumn{3}{c}{Suma de elasticidades (rendimientos a escala)} \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.2cm}
+\footnotesize
+R$^2$ = 0.992 \quad|\quad R$^2$ ajustado = 0.9911 \quad|\quad Error estándar de la regresión = 0.1056 \quad|\quad $n$ = 20
+
+\begin{tablenotes}
+\item[***] Significativo al 1\%
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}
+
+En este caso estimamos la forma log-lineal: $\ln(\text{GDP}) = \ln(A) + \alpha \ln(K) + \beta \ln(L) + \varepsilon$. 
+En esta especificación, los coeficientes de $log(K)$ y $log(L)$ se leen como elasticidades de producción. En primer lugar, la elasticidad del trabajo es de $1.00197$, altamente significativa ($p < 0.001$). Esto quiere sugiere que, manteniendo constante el capital, un aumento de $1\%$ en $L$ asocia con un aumento cercano a $1\%$ en el PIB regional. Es una magnitud grande pero creíble para un país donde las regiones más dinámicas concentran mucha mano de obra y sectores intensivos en empleo. En cambio, la elasticidad del capital es $-0.27095$ con $p = 0.194$, por lo que no es estadísticamente distinta de cero a un nivel de significancia del $5\%$. De manera que, con solo $20$ observaciones y una posible colinealidad entre $K$ y $L$, el modelo no logra aislar bien el efecto propio del capital sobre el producto. 
+
+En cuanto a los rendimientos a escala, la suma estimada de elasticidades es $\hat{\alpha}+\hat{\beta}=0.731$, lo que sugiere rendimientos decrecientes. No obstante, para evaluarlo formalmente contrastamos $H_0:\alpha+\beta=1$. Usando un error estándar aproximado para la suma, $\operatorname{SE}(\hat{\alpha}+\hat{\beta})\approx\sqrt{0.20055^2+0.02659^2}=0.202$, el estadístico es $t=(0.731-1)/0.202\approx -1.33$, con un $p$-valor muy superior a $0.10$. Por tanto, no podemos rechazar rendimientos constantes. En términos económicos, aunque el punto estimado indica una respuesta del PIB más elástica al trabajo que al capital, la evidencia sobre rendimientos a escala es insuficiente para concluir que difieran de uno.
+
+\section{Análisis de dependencia espacial}
+
+En primer lugar, construimos la matriz de pesos espaciales 
+$W$ a partir de la distancia entre los centroides de las 20 regiones italianas. Antes de definir el umbral, verificamos que el shapefile estuviera proyectado en ED50 / UTM zona 32N, lo que nos asegura que las coordenadas están en metros y que las distancias pueden interpretarse en kilómetros.  A partir de ahí probamos varios umbrales y finalmente escogimos 379 km porque es el menor valor que garantiza que ninguna región quede aislada. Así, toda región tiene al menos un vecino y la matriz $W$ refleja relaciones de proximidad que son razonables desde el punto de vista geográfico, sin forzar conexiones artificiales entre territorios demasiado lejanos. 
+
+Por otra parte, analizamos la estructura de esta matriz para calcular la dispersión y el número promedio de vecinos. El resumen de la lista de vecinos muestra que existen $164$ enlaces con peso distinto de cero y que cada región tiene, en promedio, $8,2$ vecinos. Además, solo el $41 \%$ de las posibles conexiones es diferente de cero, de modo que cerca del $59 \%$ de las celdas de $W$ son ceros. En consecuencia, la matriz puede describirse como relativamente dispersa (sparse), ya que cada región está conectada con varios territorios cercanos, lo que permite capturar patrones espaciales, pero la red no es tan densa como para parecer casi completa. 
+
+Finalmente, evaluamos si, tomando en cuenta $W$, los residuos del modelo Cobb Douglas presentan dependencia espacial. Para ello aplicamos el test de Moran, que compara la similitud entre cada observación y el promedio de sus vecinas con lo que se esperaría bajo ausencia de autocorrelación. En el caso de los residuos del $MCO$, el estadístico de Moran resulta igual a $0,516$, muy por encima de su valor esperado teórico, y el $p$-valor es prácticamente cero, por lo que hay evidencia clara de autocorrelación espacial positiva en los errores. En cambio, cuando repetimos el mismo test sobre el PIB en niveles, el índice de Moran es cercano a la expectativa y el $p$-valor es alto, de modo que no se detecta autocorrelación espacial global en la variable. En conjunto, estos resultados sugieren que el problema no está en el PIB como tal, sino en que el modelo lineal clásico deja una parte importante de la estructura espacial sin explicar, lo que justifica pasar a modelos espaciales en el siguiente punto. 
+
+\section{Modelos espaciales}
+
+Tras estimar el modelo Cobb--Douglas base y verificar la presencia de dependencia espacial en los datos, se procede a la estimación de modelos espaciales. Este paso es necesario porque los residuos del modelo inicial presentan autocorrelación significativa, mostrando que las regiones con PIB similar tienden a agruparse espacialmente y que existe información no capturada por los factores productivos incluidos en el modelo MCO. Por esto utilizamos modelos espaciales para obtener una mejor estimación del PIB en Italia.
+
+El primer modelo estimado es el SAR, que considera un rezago espacial del PIB. La ecuación es:
+
+\[
+\log(\text{GDP})=\rho W\log(\text{GDP})+\alpha+\beta_K \log(K)+\beta_L \log(L)+\varepsilon.
+\]
+
+% --- TABLA III: SAR ---
+\begin{table}[H]
+\scriptsize
+\centering
+\caption{Modelo SAR para $\log(\text{GDP})$}
+\begin{threeparttable}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Parámetro} & \textbf{Coeficiente} & \textbf{Error estándar} & \textbf{z estadístico} & \textbf{p valor} \\
+\midrule
+Intercepto & 3.4871 & 0.8397 & 4.153 & $<0.001$\tnote{***} \\
+$\log(K)$ & -0.3324 & 0.1633 & -2.036 & 0.042\tnote{**} \\
+$\log(L)$ & 1.0171 & 0.0224 & 45.371 & $<0.001$\tnote{***} \\
+$\rho$ & 0.1324 & 0.0589 & 2.250 & 0.024\tnote{**} \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.2cm}
+\footnotesize
+AIC = -31.86 \quad|\quad BIC = -26.88 \quad|\quad Varianza residual = 0.00720 \quad|\quad $n$ = 20
+
+\begin{tablenotes}
+\item[**] Significativo al 5\%
+\item[***] Significativo al 1\%
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}
+
+
+El parámetro $\rho$ estimado en el modelo SAR es positivo y estadísticamente significativo, lo que indica que el nivel de PIB de una región se asocia de manera directa con el PIB de sus regiones vecinas. Esto sugiere un patrón de concentración económica territorial, donde áreas con mayor actividad tienden a agruparse espacialmente.
+
+Sin embargo, aunque el SAR captura la interacción espacial, no corrige la dependencia presente en el término de error, que según los diagnósticos constituye la principal fuente de autocorrelación espacial.
+
+Por lo tanto, se utiliza un modelo más completo: el modelo SAC, que permite capturar tanto el rezago espacial de la variable dependiente ($\rho$) como la autocorrelación espacial en los errores ($\lambda$):
+
+\[
+\log(\text{GDP})=\rho W\log(\text{GDP})+\alpha+\beta_K \log(K)+\beta_L \log(L)+u,
+\]
+\[
+u=\lambda W u+\varepsilon.
+\]
+
+
+% --- TABLA IV: SAC ---
+\begin{table}[H]
+\scriptsize
+\centering
+\caption{Modelo SAC para $\log(\text{GDP})$}
+\begin{threeparttable}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Parámetro} & \textbf{Coeficiente} & \textbf{Error estándar} & \textbf{z estadístico} & \textbf{p valor} \\
+\midrule
+Intercepto & 5.4786 & 0.6851 & 7.997 & $<0.001$\tnote{***} \\
+$\log(K)$ & -0.2661 & 0.1135 & -2.344 & 0.019\tnote{**} \\
+$\log(L)$ & 0.9902 & 0.0166 & 59.667 & $<0.001$\tnote{***} \\
+$\rho$ & -0.0531 & 0.0590 & -0.900 & 0.368 \\
+$\lambda$ & 0.8645 & 0.0907 & 9.527 & $<0.001$\tnote{***} \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.2cm}
+\footnotesize
+AIC = -37.32 \quad|\quad BIC = -31.34 \quad|\quad Varianza residual = 0.00411 \quad|\quad $n$ = 20
+
+\begin{tablenotes}
+\item[**] Significativo al 5\%
+\item[***] Significativo al 1\%
+\end{tablenotes}
+
+\end{threeparttable}
+\end{table}
+
+
+En el modelo SAC, el parámetro del error espacial ($\lambda$) resulta alto y significativo, mostrando que buena parte de la dependencia espacial proviene de factores no observados que se transmiten entre regiones. Al incorporar esta estructura, el parámetro $\rho$ deja de ser significativo, lo que indica que el rezago espacial del PIB no es el canal central. En realidad, la mayor parte de la dependencia espacial proviene de influencias comunes no medidas que se difunden territorialmente.
+
+
+\begin{table}[H]
+\caption{Comparación de modelos}
+\centering
+\begin{tabular}{lccc}
+\hline
+Modelo & AIC & BIC & Varianza Residual ($\sigma^2$) \\
+\hline
+MCO & -28.43 & -24.44 & 0.01115 \\
+SAR & -31.86 & -26.88 & 0.00720 \\
+SAC & -37.32 & -31.34 & 0.00411 \\
+\hline
+\end{tabular}
+\end{table}
+
+El modelo SAC resulta ser el más adecuado porque captura de manera correcta la dependencia espacial presente en los datos. Los diagnósticos indican que la autocorrelación no proviene del rezago del PIB, sino del error espacial. Además, es el modelo con los valores más bajos de AIC y BIC y con la menor varianza residual, lo que refleja estimaciones más precisas y un mejor ajuste a la estructura espacial del PIB regional.
+
+\section{Impactos y diagnóstico territorial}
+
+El modelo SAC permite separar el efecto de cada variable en impactos directos, indirectos y totales. Esto es fundamental porque, cuando hay dependencia espacial, los coeficientes ya no reflejan directamente el impacto marginal. Los impactos se interpretan así: el impacto directo mide cómo cambia el PIB dentro de la misma región; el impacto indirecto recoge el efecto transmitido hacia las regiones vecinas; y el impacto total combina ambos efectos.
+
+
+\begin{table}[H]
+\caption{Tabla de impactos}
+\centering
+\begin{tabular}{lccc}
+\hline
+Variable & Impacto Directo & Impacto Indirecto & Impacto Total \\
+\hline
+$\log(K)$ & -0.2661 (0.1154) & 0.0135 (0.0155) & -0.2526 (0.1174) \\
+$\log(L)$ & 0.9906 (0.0164) & -0.0503 (0.0542) & 0.9403 (0.0634) \\
+\hline
+\end{tabular}
+\end{table}
+
+Los resultados muestran que $\log(K)$ tiene un impacto directo negativo y significativo, mientras que el efecto indirecto es pequeño y sin soporte estadístico. El impacto total sigue siendo negativo, indicando que el capital afecta principalmente a la propia región.
+
+En contraste, $\log(L)$ presenta un impacto directo positivo y fuerte, lo que confirma que el trabajo impulsa el PIB regional. El impacto indirecto es pequeño y sin relevancia, y el impacto total mantiene un efecto positivo sólido, reforzando que el empleo es el factor que más pesa en la dinámica regional.
+
+
+
+\begin{table}[H]
+\caption{Desempeño superior e inferior al predicho}
+\centering
+\begin{tabular}{lcc}
+\hline
+Región & Residuo & Clasificación \\
+\hline
+Campania & -1.4403 & Inferior \\
+Umbria & -1.1762 & Inferior \\
+Marche & -1.0638 & Inferior \\
+Calabria & -0.9731 & Inferior \\
+Molise & -0.8676 & Inferior \\
+Trentino Alto Adige & 1.9155 & Superior \\
+Valle d'Aosta & 1.8665 & Superior \\
+Lazio & 1.5592 & Superior \\
+Lombardia & 1.1167 & Superior \\
+Sicilia & 0.7952 & Superior \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1.2\linewidth]{5.png}
+    \caption{Mapa de residuos estandarizados}
+    \label{fig:placeholder}
+\end{figure}
+
+\section{Interpretación causal y limitaciones}
+
+Aunque los modelos estimados permiten caracterizar con precisión la relación entre el PIB regional, el capital y el trabajo, así como capturar la estructura espacial entre territorios vecinos, es importante enfatizar que los resultados no deben interpretarse de manera estrictamente causal. En primer lugar, la función Cobb–Douglas estimada a partir de datos transversales no puede separar adecuadamente los efectos propios de los factores productivos de otros determinantes estructurales del crecimiento regional. Elementos como la calidad institucional, la infraestructura de transporte, la composición sectorial, el nivel educativo, la integración internacional, el capital humano o las características geográficas pueden estar correlacionados con $K$ y $L$, generando sesgo por variable omitida en las elasticidades.
+
+Además, la dependencia espacial capturada por los modelos SAR y SAC refleja la existencia de influencias territoriales compartidas entre regiones, pero no identifica mecanismos causales específicos. Un coeficiente espacial significativo indica que los territorios se parecen entre sí más de lo esperado bajo independencia, pero no establece que el PIB de una región cause directamente cambios en el PIB de sus vecinas. De hecho, el modelo SAC muestra que la mayor parte de la autocorrelación proviene del componente del error ($\lambda$ alto), lo que sugiere factores no observados que se propagan espacialmente y que no están recogidos en las variables explicativas disponibles.
+
+Finalmente, el uso de datos para un único año limita la posibilidad de controlar características fijas regionales o de modelar dinámicas temporales. Sin datos panel, no es posible separar eficiencia, acumulación de factores y shocks estructurales. Por ello, los resultados deben interpretarse como relaciones contemporáneas y diagnósticos estructurales, no como estimaciones de efectos causales directos.
+
+Para mejorar la inferencia causal se requerirían:
+\begin{itemize}
+    \item Datos panel para controlar heterogeneidad inobservable
+    \item Medidas de capital humano, composición sectorial e infraestructura
+    \item Variables instrumentales creíbles para $K$ y $L$, que capturen variación exógena
+    \item Información sobre integración comercial e interacciones económicas entre regiones
+\end{itemize}
+
+Sin variación exógena proveniente de un experimento o cuasi-experimento, las conclusiones no son necesariamente causales, pero orientan decisiones de política regional, pero deben entenderse como evidencia correlacional respaldada por patrones territoriales consistentes.
+
+\section{Recomendaciones de política}
+
+A partir de los resultados econométricos y del diagnóstico territorial, se identifican varias líneas de política pública orientadas a reducir brechas regionales y mejorar el desempeño económico de las regiones italianas.
+
+En primer lugar, la elasticidad del trabajo es elevada y robusta en todos los modelos, mientras que la del capital es más incierta y en algunos casos incluso negativa. Esto sugiere que las políticas que expanden la capacidad laboral efectiva, como programas de formación, incentivos a la contratación, movilidad laboral o integración de fuerza laboral femenina y migrante, pueden generar retornos mayores sobre el PIB regional que intervenciones centradas exclusivamente en incrementar capital físico.
+
+En segundo lugar, el análisis espacial muestra que la dependencia entre regiones proviene principalmente de factores no observados que se transmiten territorialmente, más que de un efecto directo del PIB de las vecinas. Esto implica que políticas regionales deben considerar estas influencias estructurales compartidas, como acceso a infraestructura común, redes de transporte, integración productiva o vínculos administrativos. En la práctica, esto favorece intervenciones coordinadas por corredores territoriales más que inversiones aisladas por región.
+
+El diagnóstico de residuos revela regiones con desempeño inferior al predicho, como Campania, Calabria, Molise o Umbria. En estos territorios, el PIB está por debajo de lo esperado dado su nivel de capital y trabajo, lo que sugiere ineficiencias estructurales: informalidad, trabas regulatorias, debilidad institucional o baja productividad sectorial. La política pública podría enfocarse en remover estas barreras, mejorar gobernanza local, simplificar trámites y promover condiciones para atraer inversión productiva.
+
+Por otro lado, regiones con desempeño superior como Trentino Alto Adige, Valle d’Aosta, Lazio o Lombardia, muestran capacidad de generar más PIB por unidad de insumo. Esto indica que las externalidades territoriales, la calidad institucional y las redes productivas juegan un papel relevante. Estas regiones podrían actuar como polos de difusión mediante programas que fortalezcan integración interregional, transferencia tecnológica y cadenas de valor compartidas.
+
+Finalmente, dado que los impactos espaciales indirectos son modestos, las políticas deben priorizar intervenciones internas a cada región, aunque considerando complementariedades territoriales. Es decir, las inversiones en infraestructura, transporte o conectividad que reduzcan los costos de interacción entre regiones pueden amplificar efectos positivos sin requerir grandes spillovers productivos.
+
+\end{document}
